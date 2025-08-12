@@ -40,13 +40,8 @@ jobs:
       - name: Build Android Release
         run: ./android/gradlew -p ./android assembleRelease
 
-      # This new step will show you where the APK is
-      - name: List files in the output directory
-        run: ls -R android/app/build/outputs/
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-release-apk
-          # You will likely need to update this path after running the step above
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
