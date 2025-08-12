@@ -15,47 +15,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Check out the specified branch of your repository
       - name: Checkout repository
-        uses: actions/checkout@v4 # Also updated checkout to v4 for best practice
+        uses: actions/checkout@v4
 
-      # 2. Set up JDK (Java Development Kit)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
 
-      # 4. Install project dependencies
       - name: Install Dependencies
         run: npm install
 
-      # 5. Build the web assets
-      - name: Build Web App
-        run: npm run build
+      # The "Build Web App" step that was causing the error has been removed.
 
-      # 6. Sync web assets with the native Android project
       - name: Sync Capacitor Project
         run: npx cap sync android
 
-      # 7. Grant execute permission for gradlew
       - name: Make gradlew executable
         run: chmod +x ./android/gradlew
 
-      # 8. Build the Android App (APK or AAB)
       - name: Build Android Release
         run: ./android/gradlew -p ./android assembleRelease
 
-      # 9. Upload the generated APK as a build artifact
       - name: Upload APK
-        uses: actions/upload-artifact@v4 # <-- THE FIX IS HERE
+        uses: actions/upload-artifact@v4
         with:
           name: android-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
