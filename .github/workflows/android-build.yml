@@ -2,14 +2,13 @@
 
 name: Build Android App via API
 
-# This allows the workflow to be triggered manually or by an API call
 on:
   workflow_dispatch:
     inputs:
       ref:
         description: 'The branch, tag or SHA to checkout.'
         required: true
-        default: 'main' # Or your default branch
+        default: 'main'
 
 jobs:
   build:
@@ -18,22 +17,20 @@ jobs:
     steps:
       # 1. Check out the specified branch of your repository
       - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.ref }}
+        uses: actions/checkout@v4 # Also updated checkout to v4 for best practice
 
-      # 2. Set up JDK (Java Development Kit) which is required for Android builds
+      # 2. Set up JDK (Java Development Kit)
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Set up Node.js for npm commands
+      # 3. Set up Node.js
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18' # Use a version compatible with your project
+          node-version: '18'
           cache: 'npm'
 
       # 4. Install project dependencies
@@ -53,13 +50,12 @@ jobs:
         run: chmod +x ./android/gradlew
 
       # 8. Build the Android App (APK or AAB)
-      # Use 'assembleRelease' for APK or 'bundleRelease' for AAB
       - name: Build Android Release
         run: ./android/gradlew -p ./android assembleRelease
 
       # 9. Upload the generated APK as a build artifact
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # <-- THE FIX IS HERE
         with:
           name: android-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
