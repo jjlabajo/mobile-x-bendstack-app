@@ -1,0 +1,9 @@
+{
+  "appId": "com.example.app",
+  "appName": "mobile-x-bendstack-app",
+  "webDir": "www",
+  "server": {
+    "url": "https://x.bendstack.app",
+    "cleartext": true
+  }
+}
