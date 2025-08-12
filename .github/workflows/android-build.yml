@@ -47,14 +47,14 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
 
-      # 8. Build a SIGNED APK using the keystore secrets
+      # 8. Build a SIGNED APK using the keystore secrets (WITH QUOTES ADDED)
       - name: Build Signed Android Release
         run: |
           ./android/gradlew -p ./android assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/android/app/my-release-key.keystore \
-            -Pandroid.injected.signing.store.password=${{ secrets.RELEASE_KEYSTORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.RELEASE_KEY_ALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.RELEASE_KEY_PASSWORD }}
+            -Pandroid.injected.signing.store.password='${{ secrets.RELEASE_KEYSTORE_PASSWORD }}' \
+            -Pandroid.injected.signing.key.alias='${{ secrets.RELEASE_KEY_ALIAS }}' \
+            -Pandroid.injected.signing.key.password='${{ secrets.RELEASE_KEY_PASSWORD }}'
 
       # 9. Authenticate with Google Cloud using your Firebase service account
       - name: Authenticate with Google Cloud
