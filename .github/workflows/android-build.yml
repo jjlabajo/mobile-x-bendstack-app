@@ -45,10 +45,18 @@ jobs:
           echo "🌿 Switched to new unique branch: ${BRANCH_NAME}"
 
       # 3. Update app name and server URL in capacitor.config.json
-      - name: Update App Name & Config
+      - name: Update Capacitor Config
         run: |
-          jq '.server.url = "https://${{ inputs.project_id }}.bendstack.app" | .appName = "${{ inputs.app_name }}"' capacitor.config.json > temp.json && mv temp.json capacitor.config.json
+          jq '.server.url = "https://"${{ inputs.project_id }}".bendstack.app" | .appName = "${{ inputs.app_name }}"' capacitor.config.json > temp.json && mv temp.json capacitor.config.json
           echo "✅ Config updated for app: ${{ inputs.app_name }}"
+      
+      - name: Update Native Android App Name
+        run: |
+          strings_file="android/app/src/main/res/values/strings.xml"
+          # Use 'sed' to replace the value inside the <string name="app_name"> tag
+          sed -i 's|\(<string name="app_name">\).*\(</string>\)|\1${{ inputs.app_name }}\2|' "$strings_file"
+          sed -i 's|\(<string name="title_activity_main">\).*\(</string>\)|\1${{ inputs.app_name }}\2|' "$strings_file"
+          echo "✅ Directly updated app name in strings.xml"
 
       # 4. Download and replace the app icon
       - name: Update App Icon
