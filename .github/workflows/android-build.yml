@@ -68,9 +68,9 @@ jobs:
           git config --global user.email 'github-actions-bot@github.com'
           git add capacitor.config.json android/app/src/main/res/
           git diff-index --quiet HEAD || git commit -m "feat(ci): Configure app for ${{ inputs.project_id }}"
-          # Push the new branch to the remote repository and set it to track
-          git push -u origin ${{ inputs.project_id }}
-          echo "✅ Pushed changes to branch: ${{ inputs.project_id }}"
+          # Push the new unique branch to the remote repository
+          git push -u origin ${{ inputs.project_id }}-${{ steps.vars.outputs.short_sha }}
+          echo "✅ Pushed changes to branch: ${{ inputs.project_id }}-${{ steps.vars.outputs.short_sha }}"
 
       # --- YOUR EXISTING BUILD STEPS CONTINUE FROM HERE ---
 
