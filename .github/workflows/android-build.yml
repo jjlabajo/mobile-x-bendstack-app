@@ -93,19 +93,16 @@ jobs:
       - name: Sync Capacitor Project
         run: npx cap sync android
 
-      - name: Update App Icon
+      - name: Generate and Update App Icons
         run: |
-          curl -L -o new_logo.png "${{ inputs.logo_url }}"
+          # Install the official Capacitor assets tool
+          npm install @capacitor/assets --save-dev
+          # Download the source logo to a file named 'logo.png'
+          curl -L -o logo.png "${{ inputs.logo_url }}"
           echo "✅ Logo downloaded successfully."
-          for dir in android/app/src/main/res/mipmap-*; do
-            # MODIFIED: Added a check to exclude the adaptive icon directory
-            if [ -d "$dir" ] && [ "$(basename "$dir")" != "mipmap-anydpi-v26" ]; then
-              cp new_logo.png "$dir/ic_launcher.png"
-              cp new_logo.png "$dir/ic_launcher_round.png"
-              echo "✅ Replaced legacy icons in $dir"
-            fi
-          done
-          echo "✅ Replaced all icons"
+          # Run the tool to generate all icon formats, including adaptive icons
+          npx capacitor-assets generate --icon --android
+          echo "✅ Generated all Android icons using capacitor-assets"
 
       # 8. Make the Gradle wrapper executable
       - name: Make gradlew executable
@@ -143,16 +140,19 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
 
-      # 12. Upload the final signed APK to Firebase Storage
+      # 13. Upload the final signed APK to your Firebase Storage bucket
       - name: Upload APK to Firebase Storage
         uses: google-github-actions/upload-cloud-storage@v2
         with:
-          path: android/app/build/outputs/apk/release/app-release.apk
-          destination: ${{ secrets.FIREBASE_STORAGE_BUCKET }}/latest/app-release.apk
+          # MODIFIED: Update the path to the newly renamed APK
+          path: android/app/build/outputs/apk/release/${{ steps.brancher.outputs.branch_name }}.apk
+          # MODIFIED: Update the destination filename in Firebase
+          destination: ${{ secrets.FIREBASE_STORAGE_BUCKET }}/latest/${{ steps.brancher.outputs.branch_name }}.apk
 
-      # 13. Upload the signed APK as a GitHub artifact
+      # 14. Upload the signed APK as a GitHub artifact
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.brancher.outputs.branch_name }}
-          path: android/app/build/outputs/apk/release/app-release.apk
+          # MODIFIED: Update the path to point to the newly renamed APK
+          path: android/app/build/outputs/apk/release/${{ steps.brancher.outputs.branch_name }}.apk
