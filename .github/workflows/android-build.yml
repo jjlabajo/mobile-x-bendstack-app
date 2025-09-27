@@ -28,46 +28,49 @@ jobs:
       contents: write
 
     steps:
-      # 1. Check out the repository code (using the 'ref' input)
+      # 1. Checkout repository (starts on the 'master' branch)
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
 
-      # 2. MODIFIED: Update app name and server URL in capacitor.config.json
+      # 2. NEW: Create a new branch named after the project ID and switch to it
+      - name: Create and Switch to Project Branch
+        run: |
+          git checkout -b ${{ inputs.project_id }}
+          echo "🌿 Switched to new branch: ${{ inputs.project_id }}"
+
+      # 3. Update app name and server URL in capacitor.config.json
       - name: Update App Name & Config
         run: |
-          # Use a chained jq command to update both fields at once
           jq '.server.url = "https://${{ inputs.project_id }}.bendstack.app" | .appName = "${{ inputs.app_name }}"' capacitor.config.json > temp.json && mv temp.json capacitor.config.json
           echo "✅ Config updated for app: ${{ inputs.app_name }}"
-          cat capacitor.config.json
 
-      # 3. NEW: Download and replace the app icon
+      # 4. Download and replace the app icon
       - name: Update App Icon
         run: |
-          # Download the new logo from the URL provided
           curl -L -o new_logo.png "${{ inputs.logo_url }}"
           echo "✅ Logo downloaded successfully."
-          
-          # Find all standard Android mipmap directories and replace the launcher icons
           for dir in android/app/src/main/res/mipmap-*; do
             if [ -d "$dir" ]; then
-              # Replace the standard square and round icons
               cp new_logo.png "$dir/ic_launcher.png"
               cp new_logo.png "$dir/ic_launcher_round.png"
-              echo "✅ Replaced icons in $dir"
             fi
           done
+          echo "✅ Replaced all icons"
 
-      # 3.2. MODIFIED: Commit all configuration and asset changes
+      # 5. MODIFIED: Commit and push the changes to the NEW project branch
       - name: Commit and Push Changes
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'github-actions-bot@github.com'
-          # Add the config file AND the new logo resources
           git add capacitor.config.json android/app/src/main/res/
-          git diff-index --quiet HEAD || git commit -m "feat(ci): Update config, name, and logo for ${{ inputs.project_id }}"
-          git push
+          git diff-index --quiet HEAD || git commit -m "feat(ci): Configure app for ${{ inputs.project_id }}"
+          # Push the new branch to the remote repository and set it to track
+          git push -u origin ${{ inputs.project_id }}
+          echo "✅ Pushed changes to branch: ${{ inputs.project_id }}"
+
+      # --- YOUR EXISTING BUILD STEPS CONTINUE FROM HERE ---
 
       # 4. Set up the correct Java Development Kit version (JDK 21)
       - name: Set up JDK 21
