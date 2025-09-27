@@ -3,7 +3,7 @@
   "appName": "mobile-x-bendstack-app",
   "webDir": "www",
   "server": {
-    "url": "https://x.bendstack.app",
+    "url": "https://cat-social-pxdol.bendstack.app",
     "cleartext": true
   }
 }
