@@ -60,6 +60,10 @@ jobs:
           echo "✅ Directly updated app name in strings.xml"
 
       # === MOVED STEPS START HERE ===
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
 
       - name: Generate and Update App Icons
         run: |
