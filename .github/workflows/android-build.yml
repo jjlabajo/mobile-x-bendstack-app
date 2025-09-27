@@ -100,8 +100,9 @@ jobs:
           # Download the source logo to a file named 'logo.png'
           curl -L -o logo.png "${{ inputs.logo_url }}"
           echo "✅ Logo downloaded successfully."
-          # Run the tool to generate all icon formats, including adaptive icons
-          npx capacitor-assets generate --icon --android
+          # MODIFIED: Removed the invalid '--icon' flag.
+          # The tool will automatically detect 'logo.png' and generate icons.
+          npx capacitor-assets generate --android
           echo "✅ Generated all Android icons using capacitor-assets"
 
       # 8. Make the Gradle wrapper executable
