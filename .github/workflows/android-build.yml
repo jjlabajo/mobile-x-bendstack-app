@@ -58,21 +58,6 @@ jobs:
           sed -i 's|\(<string name="title_activity_main">\).*\(</string>\)|\1${{ inputs.app_name }}\2|' "$strings_file"
           echo "✅ Directly updated app name in strings.xml"
 
-      # 4. Download and replace the app icon
-      - name: Update App Icon
-        run: |
-          curl -L -o new_logo.png "${{ inputs.logo_url }}"
-          echo "✅ Logo downloaded successfully."
-          for dir in android/app/src/main/res/mipmap-*; do
-            # MODIFIED: Added a check to exclude the adaptive icon directory
-            if [ -d "$dir" ] && [ "$(basename "$dir")" != "mipmap-anydpi-v26" ]; then
-              cp new_logo.png "$dir/ic_launcher.png"
-              cp new_logo.png "$dir/ic_launcher_round.png"
-              echo "✅ Replaced legacy icons in $dir"
-            fi
-          done
-          echo "✅ Replaced all icons"
-
       # 5. MODIFIED: Commit and push the changes to the NEW project branch
       - name: Commit and Push Changes
         run: |
@@ -107,6 +92,20 @@ jobs:
       # 7. Sync the web assets with the native project
       - name: Sync Capacitor Project
         run: npx cap sync android
+
+      - name: Update App Icon
+        run: |
+          curl -L -o new_logo.png "${{ inputs.logo_url }}"
+          echo "✅ Logo downloaded successfully."
+          for dir in android/app/src/main/res/mipmap-*; do
+            # MODIFIED: Added a check to exclude the adaptive icon directory
+            if [ -d "$dir" ] && [ "$(basename "$dir")" != "mipmap-anydpi-v26" ]; then
+              cp new_logo.png "$dir/ic_launcher.png"
+              cp new_logo.png "$dir/ic_launcher_round.png"
+              echo "✅ Replaced legacy icons in $dir"
+            fi
+          done
+          echo "✅ Replaced all icons"
 
       # 8. Make the Gradle wrapper executable
       - name: Make gradlew executable
@@ -155,5 +154,5 @@ jobs:
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-release-apk
+          name: ${{ steps.brancher.outputs.branch_name }}
           path: android/app/build/outputs/apk/release/app-release.apk
