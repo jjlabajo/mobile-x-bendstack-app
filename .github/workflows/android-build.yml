@@ -64,10 +64,11 @@ jobs:
       - name: Generate and Update App Icons
         run: |
           npm install @capacitor/assets --save-dev
-          curl -L -o logo.png "${{ inputs.logo_url }}"
-          echo "✅ Logo downloaded successfully."
+          mkdir -p assets
+          curl -L -o assets/icon-only.png "${{ inputs.logo_url }}"
+          echo "✅ Logo downloaded to assets/logo.png."
           npx capacitor-assets generate --android
-          echo "✅ Generated all Android icons using capacitor-assets"
+          echo "✅ Generated all Android icons using capacitor-assets."
 
       - name: Sync Capacitor Project
         run: npx cap sync android
