@@ -108,10 +108,23 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
 
+      # NEW DEBUG STEP: Add this right before the build step
+      - name: Verify File Changes
+        run: |
+          echo "--- Verifying capacitor.config.json ---"
+          cat capacitor.config.json
+          echo ""
+          echo "--- Verifying AndroidManifest.xml app name ---"
+          cat android/app/src/main/res/values/strings.xml
+          echo ""
+          echo "--- Verifying icon files exist ---"
+          ls -l android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
       # 10. Build a SIGNED APK using the keystore secrets
       - name: Build Signed Android Release
         run: |
-          ./android/gradlew -p ./android assembleRelease \
+          # MODIFIED: Added the 'clean' task to clear the build cache
+          ./android/gradlew -p ./android clean assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/android/app/my-release-key.keystore \
             -Pandroid.injected.signing.store.password='${{ secrets.RELEASE_KEYSTORE_PASSWORD }}' \
             -Pandroid.injected.signing.key.alias='${{ secrets.RELEASE_KEY_ALIAS }}' \
