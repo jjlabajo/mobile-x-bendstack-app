@@ -1,40 +1,15 @@
-name: Build Android App via API
-
-on:
-  workflow_dispatch:
-    inputs:
-      # This input from your original file is kept
-      ref:
-        description: 'The branch, tag or SHA to checkout.'
-        required: true
-        default: 'master'
-      # NEW: Added the project_id input to receive from the API
-      project_id:
-        description: 'The Bendstack Project ID for the server URL'
-        required: true
-      app_name:
-        description: 'The desired name for the mobile app'
-        required: true
-      logo_url:
-        description: 'Public URL to the app logo image (PNG)'
-        required: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    # NEW: Added permissions for the job to commit changes back to the repo
     permissions:
       contents: write
 
     steps:
-      # 1. Checkout repository (starts on the 'master' branch)
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
 
-      # 2. NEW: Create a new branch named after the project ID and switch to it
       - name: Create and Switch to Project Branch
         id: brancher
         run: |
@@ -44,7 +19,15 @@ jobs:
           echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
           echo "🌿 Switched to new unique branch: ${BRANCH_NAME}"
 
-      # 3. Update app name and server URL in capacitor.config.json
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+      
       - name: Update Capacitor Config
         run: |
           jq '.server.url = "https://"${{ inputs.project_id }}".bendstack.app" | .appName = "${{ inputs.app_name }}"' capacitor.config.json > temp.json && mv temp.json capacitor.config.json
@@ -53,107 +36,62 @@ jobs:
       - name: Update Native Android App Name
         run: |
           strings_file="android/app/src/main/res/values/strings.xml"
-          # Use 'sed' to replace the value inside the <string name="app_name"> tag
           sed -i 's|\(<string name="app_name">\).*\(</string>\)|\1${{ inputs.app_name }}\2|' "$strings_file"
           sed -i 's|\(<string name="title_activity_main">\).*\(</string>\)|\1${{ inputs.app_name }}\2|' "$strings_file"
           echo "✅ Directly updated app name in strings.xml"
 
-      # 5. MODIFIED: Commit and push the changes to the NEW project branch
+      # === MOVED STEPS START HERE ===
+
+      - name: Generate and Update App Icons
+        run: |
+          npm install @capacitor/assets --save-dev
+          curl -L -o logo.png "${{ inputs.logo_url }}"
+          echo "✅ Logo downloaded successfully."
+          npx capacitor-assets generate --android
+          echo "✅ Generated all Android icons using capacitor-assets"
+
+      - name: Sync Capacitor Project
+        run: npx cap sync android
+
+      # === MOVED STEPS END HERE ===
+
       - name: Commit and Push Changes
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'github-actions-bot@github.com'
+          # MODIFIED: Add all generated resources to the commit
           git add capacitor.config.json android/app/src/main/res/
           git diff-index --quiet HEAD || git commit -m "feat(ci): Configure app for ${{ inputs.project_id }}"
-          # Push the new unique branch using the output from the 'brancher' step
           git push -u origin ${{ steps.brancher.outputs.branch_name }}
           echo "✅ Pushed changes to branch: ${{ steps.brancher.outputs.branch_name }}"
 
-      # --- YOUR EXISTING BUILD STEPS CONTINUE FROM HERE ---
-
-      # 4. Set up the correct Java Development Kit version (JDK 21)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      # 5. Set up the correct Node.js version (Node 20)
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      # 6. Install project dependencies
-      - name: Install Dependencies
-        run: npm install
-
-      # 7. Sync the web assets with the native project
-      - name: Sync Capacitor Project
-        run: npx cap sync android
-
-      - name: Generate and Update App Icons
-        run: |
-          # Install the official Capacitor assets tool
-          npm install @capacitor/assets --save-dev
-          # Download the source logo to a file named 'logo.png'
-          curl -L -o logo.png "${{ inputs.logo_url }}"
-          echo "✅ Logo downloaded successfully."
-          # MODIFIED: Removed the invalid '--icon' flag.
-          # The tool will automatically detect 'logo.png' and generate icons.
-          npx capacitor-assets generate --android
-          echo "✅ Generated all Android icons using capacitor-assets"
-
-      # 8. Make the Gradle wrapper executable
       - name: Make gradlew executable
         run: chmod +x ./android/gradlew
 
-      # 9. Decode the keystore from the GitHub Secret
       - name: Decode Keystore
         run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
 
-      # NEW DEBUG STEP: Add this right before the build step
-      - name: Verify File Changes
-        run: |
-          echo "--- Verifying capacitor.config.json ---"
-          cat capacitor.config.json
-          echo ""
-          echo "--- Verifying AndroidManifest.xml app name ---"
-          cat android/app/src/main/res/values/strings.xml
-          echo ""
-          echo "--- Verifying icon files exist ---"
-          ls -l android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-
-      # 10. Build a SIGNED APK using the keystore secrets
       - name: Build Signed Android Release
         run: |
-          # MODIFIED: Added the 'clean' task to clear the build cache
           ./android/gradlew -p ./android clean assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/android/app/my-release-key.keystore \
             -Pandroid.injected.signing.store.password='${{ secrets.RELEASE_KEYSTORE_PASSWORD }}' \
             -Pandroid.injected.signing.key.alias='${{ secrets.RELEASE_KEY_ALIAS }}' \
             -Pandroid.injected.signing.key.password='${{ secrets.RELEASE_KEY_PASSWORD }}'
 
-      # 11. Authenticate with Google Cloud
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
 
-      # 13. Upload the final signed APK to your Firebase Storage bucket
       - name: Upload APK to Firebase Storage
         uses: google-github-actions/upload-cloud-storage@v2
         with:
-          # MODIFIED: Update the path to the newly renamed APK
           path: android/app/build/outputs/apk/release/app-release.apk
-          # MODIFIED: Update the destination filename in Firebase
           destination: ${{ secrets.FIREBASE_STORAGE_BUCKET }}/latest/${{ steps.brancher.outputs.branch_name }}.apk
-
-      # 14. Upload the signed APK as a GitHub artifact
-      - name: Upload APK as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.brancher.outputs.branch_name }}
-          # MODIFIED: Update the path to point to the newly renamed APK
-          path: android/app/build/outputs/apk/release/${{ steps.brancher.outputs.branch_name }}.apk
