@@ -67,10 +67,16 @@ jobs:
           mkdir -p assets
           curl -L -o assets/icon-only.png "${{ inputs.logo_url }}"
           echo "✅ Logo downloaded to assets/icon-only.png."
+          convert assets/icon-only.png -background white -flatten assets/icon-only.png
+          echo "✨ Processed icon to have a white background."
           cp assets/icon-only.png assets/icon-foreground.png
           echo "✅ Copied icon-only.png to icon-foreground.png."
           cp assets/icon-only.png assets/icon-background.png
           echo "✅ Copied icon-only.png to icon-background.png."
+          convert -size 2732x2732 canvas:white assets/icon-only.png -gravity center -composite assets/splash.png
+          echo "🎨 Created 2732x2732 splash screen at assets/splash.png."
+          cp assets/splash.png assets/splash-dark.png
+          echo "✅ Copied splash.png to splash-dark.png."
           npx capacitor-assets generate --android
           echo "✅ Generated all Android icons using capacitor-assets."
 
