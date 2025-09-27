@@ -52,9 +52,11 @@ jobs:
           curl -L -o new_logo.png "${{ inputs.logo_url }}"
           echo "✅ Logo downloaded successfully."
           for dir in android/app/src/main/res/mipmap-*; do
-            if [ -d "$dir" ]; then
+            # MODIFIED: Added a check to exclude the adaptive icon directory
+            if [ -d "$dir" ] && [ "$(basename "$dir")" != "mipmap-anydpi-v26" ]; then
               cp new_logo.png "$dir/ic_launcher.png"
               cp new_logo.png "$dir/ic_launcher_round.png"
+              echo "✅ Replaced legacy icons in $dir"
             fi
           done
           echo "✅ Replaced all icons"
