@@ -1,3 +1,22 @@
+name: Build Android App via API
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'The branch, tag or SHA to checkout.'
+        required: true
+        default: 'master'
+      project_id:
+        description: 'The Bendstack Project ID for the server URL'
+        required: true
+      app_name:
+        description: 'The desired name for the mobile app'
+        required: true
+      logo_url:
+        description: 'Public URL to the app logo image (PNG)'
+        required: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
