@@ -129,3 +129,22 @@ jobs:
         with:
           path: android/app/build/outputs/apk/release/app-release.apk
           destination: ${{ secrets.FIREBASE_STORAGE_BUCKET }}/latest/${{ steps.brancher.outputs.branch_name }}.apk
+          
+      - name: Construct Firebase Storage Public URL
+        id: storage_url
+        run: |
+          BUCKET="${{ secrets.FIREBASE_STORAGE_BUCKET }}"
+          OBJECT_PATH="latest/${{ steps.brancher.outputs.branch_name }}.apk"
+          # URL encode the object path to handle special characters
+          ENCODED_OBJECT_PATH=$(echo -n "$OBJECT_PATH" | jq -sRr @uri)
+          URL="https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/${ENCODED_OBJECT_PATH}?alt=media"
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+          echo "✅ Constructed Public URL: ${URL}"
+
+      - name: Update Firestore with Download URL
+        run: |
+          echo "🔥 Updating Firestore document 'projects/${{ inputs.project_id }}'..."
+          gcloud firestore documents update "projects/${{ inputs.project_id }}" \
+            --update-field-paths="android_download_url" \
+            --update-field-values="string_value=${{ steps.storage_url.outputs.url }}"
+          echo "✅ Firestore updated successfully."
