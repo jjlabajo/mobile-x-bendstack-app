@@ -46,11 +46,12 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
-      
-      - name: Update Capacitor Config
+
+      - name: Update capacitor.config.json
         run: |
-          jq '.server.url = "https://"${{ inputs.project_id }}".bendstack.app" | .appName = "${{ inputs.app_name }}"' capacitor.config.json > temp.json && mv temp.json capacitor.config.json
-          echo "✅ Config updated for app: ${{ inputs.app_name }}"
+          jq '.server.url = "https://${{ inputs.project_id }}.bendstack.app"' capacitor.config.json > temp.json && mv temp.json capacitor.config.json
+          echo "✅ Config updated for project: ${{ inputs.project_id }}"
+          cat capacitor.config.json
       
       - name: Update Native Android App Name
         run: |
