@@ -128,5 +128,14 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: android/app/build/outputs/apk/release/app-release.apk
-          destination: ${{ secrets.FIREBASE_STORAGE_BUCKET }}/android-builds/${{ inputs.project_id }}.apk
+          destination: ${{ secrets.FIREBASE_STORAGE_BUCKET }}/android-builds/${{ steps.brancher.outputs.branch_name }}
           predefinedAcl: 'publicRead'
+      
+      - name: Notify Backend via Cloud Function
+        run: |
+          echo "🔥 Notifying backend about new build..."
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"projectId": "${{ inputs.project_id }}", "url": "${{ secrets.FIREBASE_STORAGE_BUCKET }}/android-builds/${{ steps.brancher.outputs.branch_name }}/app-release.apk"}' \
+            https://us-central1-bendstack-7e417.cloudfunctions.net/updateProjectAndroidDownloadURL
+          echo "✅ Backend notified successfully."
