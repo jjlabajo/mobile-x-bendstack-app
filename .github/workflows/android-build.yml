@@ -143,10 +143,11 @@ jobs:
           echo "url=${URL}" >> $GITHUB_OUTPUT
           echo "✅ Constructed Public URL: ${URL}"
 
-      - name: Update Firestore with Download URL
+      - name: Notify Backend via Cloud Function
         run: |
-          echo "🔥 Updating Firestore document 'projects/${{ inputs.project_id }}'..."
-          gcloud firestore documents update "projects/${{ inputs.project_id }}" \
-            --update-field-paths="android_download_url" \
-            --update-field-values="string_value=${{ steps.storage_url.outputs.url }}"
-          echo "✅ Firestore updated successfully."
+          echo "🔥 Notifying backend about new build..."
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"projectId": "${{ inputs.project_id }}", "url": "${{ steps.storage_url.outputs.url }}"}' \
+            https://us-central1-bendstack-7e417.cloudfunctions.net/updateProjectAndroidDownloadURL
+          echo "✅ Backend notified successfully."
