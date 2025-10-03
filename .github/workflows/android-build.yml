@@ -119,35 +119,14 @@ jobs:
             -Pandroid.injected.signing.key.alias='${{ secrets.RELEASE_KEY_ALIAS }}' \
             -Pandroid.injected.signing.key.password='${{ secrets.RELEASE_KEY_PASSWORD }}'
 
-      - name: Set up Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@v2
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          project_id: 'bendstack-7e417'
-          service_account_key: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          export_default_credentials: true
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
 
       - name: Upload APK to Firebase Storage
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: android/app/build/outputs/apk/release/app-release.apk
-          destination: ${{ secrets.FIREBASE_STORAGE_BUCKET }}/latest/${{ steps.brancher.outputs.branch_name }}.apk
-          
-      - name: Construct Firebase Storage Public URL
-        id: storage_url
-        run: |
-          BUCKET="${{ secrets.FIREBASE_STORAGE_BUCKET }}"
-          OBJECT_PATH="latest/${{ steps.brancher.outputs.branch_name }}.apk"
-          # URL encode the object path to handle special characters
-          ENCODED_OBJECT_PATH=$(echo -n "$OBJECT_PATH" | jq -sRr @uri)
-          URL="https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/${ENCODED_OBJECT_PATH}?alt=media"
-          echo "url=${URL}" >> $GITHUB_OUTPUT
-          echo "✅ Constructed Public URL: ${URL}"
-
-      - name: Notify Backend via Cloud Function
-        run: |
-          echo "🔥 Notifying backend about new build..."
-          curl -X POST \
-            -H "Content-Type: application/json" \
-            -d '{"projectId": "${{ inputs.project_id }}", "url": "${{ steps.storage_url.outputs.url }}"}' \
-            https://us-central1-bendstack-7e417.cloudfunctions.net/updateProjectAndroidDownloadURL
-          echo "✅ Backend notified successfully."
+          destination: ${{ secrets.FIREBASE_STORAGE_BUCKET }}/android-builds/${{ inputs.project_id }}.apk
+          predefinedAcl: 'publicRead'
